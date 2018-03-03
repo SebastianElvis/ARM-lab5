@@ -136,9 +136,9 @@ int main()
 	//matrix_multiply_basic();
 	matrix_multiply_asm();
 
-    print_matrix(matrixC, 10);
-
 	end_perf(perf);			// stop performance events count
+
+	print_matrix(matrixC, 10);
 
 	clock_t end_time = clock();
 

@@ -66,11 +66,13 @@ void matrix_multiply_asm()
 
 
         // &matrixC[i][j] -> r6
-        "mov r6, r1"                    "\n\t"
+        //"mov r6, r1"                    "\n\t"
         "mul r7, r0, r11"                    "\n\t"
-        "add r6, r6, r7"                    "\n\t"
-        "mul r6, r10, r6"                    "\n\t"
+        "add r6, r1, r7"                    "\n\t"
+	"mul r6, r10, r6"                    "\n\t"
         "add r6, r6, r5"                    "\n\t"
+        //"mla r6, r1, r0, r11"		"\n\t"
+	//"mla r6, r5, r10, r6"		"\n\t"
 
         // r12 -> matrixC[i][j]
         "ldr r12, [r6]"                 "\n\t"

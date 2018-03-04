@@ -47,8 +47,10 @@ void print_matrix(int matrix[N][N], int n){
 void matrix_multiply_asm()
 {
     asm volatile(
-		"push {r0-r12, r14}"			"\n\t"	//save the state of the registers
-        "mov r11, #1024"                  "\n\t"
+	//save the state of the registers
+	"push {r0-r12, r14}"			"\n\t"	
+        
+	"mov r11, #1024"                  "\n\t"
         "mov r10, #4"                   "\n\t"
 
         "mov r3, %[a]"                  "\n\t"
@@ -66,36 +68,25 @@ void matrix_multiply_asm()
 
 
         // &matrixC[i][j] -> r6
-        //"mov r6, r1"                    "\n\t"
-        "mul r7, r0, r11"                    "\n\t"
-        "add r6, r1, r7"                    "\n\t"
-	"mul r6, r10, r6"                    "\n\t"
-        "add r6, r6, r5"                    "\n\t"
-        //"mla r6, r1, r0, r11"		"\n\t"
-	//"mla r6, r5, r10, r6"		"\n\t"
+        "mla r6, r11, r1, r0"		"\n\t"
+	"mla r6, r10, r6, r5"		"\n\t"
 
         // r12 -> matrixC[i][j]
         "ldr r12, [r6]"                 "\n\t"
     "K_loop:"                    "\n\t"
-        // &matrixA[i][k] -> r7
-        "mov r7, r2"                    "\n\t"
-        "mul r8, r0, r11"                    "\n\t"
-        "add r7, r7, r8"                    "\n\t"
-        "mul r7, r10, r7"                    "\n\t"
-        "add r7, r7, r3"                    "\n\t"
+        
+	// &matrixA[i][k] -> r7
+        "mla r7, r0, r11, r2"		"\n\t"
+	"mla r7, r10, r7, r3"		"\n\t"
 
         // &matrixB[k][j] -> r8
-        "mov r8, r1"                    "\n\t"
-        "mul r9, r2, r11"                    "\n\t"
-        "add r8, r8, r9"                    "\n\t"
-        "mul r8, r10, r8"                    "\n\t"
-        "add r8, r8, r4"                    "\n\t"
+        "mla r8, r2, r11, r1"			"\n\t"
+	"mla r8, r10, r8, r4"			"\n\t"	
 
         // matrixC[i][j] += matrixA[i][k] * matrixB[k][j]
         "ldr r7, [r7]"                    "\n\t"
         "ldr r8, [r8]"                    "\n\t"
-        "mul r7, r8, r7"                    "\n\t"
-        "add r12, r12, r7"                    "\n\t"
+	"mla r12, r8, r7, r12"			"\n\t"	
 
         "add r2, r2, #1"                    "\n\t"
         "cmp r2, r11"                    "\n\t"

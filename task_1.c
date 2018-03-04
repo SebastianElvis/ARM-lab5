@@ -98,11 +98,11 @@ void matrix_multiply_asm()
 
         "add r1, r1, #1"                    "\n\t"
         "cmp r1, r11"                    "\n\t"
-	    "bne J_loop"                    "\n\t"
+	"bne J_loop"                    "\n\t"
 
         "add r0, r0, #1"                    "\n\t"
         "cmp r0, r11"                    "\n\t"
-	    "bne I_loop"                    "\n\t"
+	"bne I_loop"                    "\n\t"
 
         "pop {r0-r12, r14}"                    "\n\t"
 

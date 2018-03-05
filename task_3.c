@@ -85,14 +85,14 @@ int main()
 	start_perf(perf_cache_miss);		// start performance events count
 	start_perf(perf_cache_access);		// start performance events count
 
-	matrix_multiply_basic();
+	matrix_multiply_opt();
 
 	end_perf(perf_cache_miss);			// stop performance events count
 	end_perf(perf_cache_access);			// stop performance events count
 
 	clock_t end_time = clock();
 
-    print_matrix(matrixC, 10);
+    	//print_matrix(matrixC, 10);
 
 	printf("Execution took %f seconds.\n", (end_time-begin_time)/1000000.0);
 

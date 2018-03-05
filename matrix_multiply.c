@@ -37,26 +37,30 @@ void matrix_multiply_basic()
 int main()
 {
 	init_matrixes();/* Initializes matrix elements */
-	int perf;
+	int perf, perf_cache_miss, perf_cache_access;
 	
 	// init performance events count
 	//for description of events write "man perf_event_open" in console
-	perf = setup_perf(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); 
-	//perf = setup_perf_cache(PERF_COUNT_HW_CACHE_LL, PERF_COUNT_HW_CACHE_OP_READ, PERF_COUNT_HW_CACHE_RESULT_MISS);
+	//perf = setup_perf(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); 
+	perf_cache_miss = setup_perf_cache(PERF_COUNT_HW_CACHE_LL, PERF_COUNT_HW_CACHE_OP_READ, PERF_COUNT_HW_CACHE_RESULT_MISS);
+	perf_cache_access = setup_perf_cache(PERF_COUNT_HW_CACHE_LL, PERF_COUNT_HW_CACHE_OP_READ, PERF_COUNT_HW_CACHE_RESULT_ACCESS);
 	
 	clock_t begin_time = clock();
 	
-	start_perf(perf);		// start performance events count
+	start_perf(perf_cache_miss);		// start performance events count
+	start_perf(perf_cache_access);		// start performance events count
 	
 	matrix_multiply_basic();
 	
-	end_perf(perf);			// stop performance events count
+	end_perf(perf_cache_miss);			// stop performance events count
+	end_perf(perf_cache_access);			// stop performance events count
 	
 	clock_t end_time = clock();
 	
 	printf("Execution took %f seconds.\n", (end_time-begin_time)/1000000.0);
 	
-	print_perf(perf);		// print performance events count
+	print_perf(perf_cache_miss);		// print performance events count
+	print_perf(perf_cache_access);		// print performance events count
 	
 	return 0;
 

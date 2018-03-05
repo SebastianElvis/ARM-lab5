@@ -72,27 +72,34 @@ void matrix_multiply_asm()
         "vmov.i32 d2, #0"                       "\n\t"
 
         // &matrixC[i][j] -> r6
-        "mov r6, r1"                    "\n\t"
-        "mul r7, r0, r11"                    "\n\t"
-        "add r6, r6, r7"                    "\n\t"
-        "mul r6, r10, r6"                    "\n\t"
-        "add r6, r6, r5"                    "\n\t"
+	"mla r6, r11, r1, r0"		"\n\t"
+	"mla r6, r10, r6, r5"		"\n\t"
+
+        //"mov r6, r1"                    "\n\t"
+        //"mul r7, r0, r11"                    "\n\t"
+        //"add r6, r6, r7"                    "\n\t"
+        //"mul r6, r10, r6"                    "\n\t"
+        //"add r6, r6, r5"                    "\n\t"
 
     "K_loop:"                    "\n\t"
 
         // &matrixA[i][k] -> r7
-        "mov r7, r2"                    "\n\t"
-        "mul r8, r0, r11"                    "\n\t"
-        "add r7, r7, r8"                    "\n\t"
-        "mul r7, r10, r7"                    "\n\t"
-        "add r7, r7, r3"                    "\n\t"
+        "mla r7, r0, r11, r2"		"\n\t"
+	"mla r7, r10, r7, r3"		"\n\t"
+    	//"mov r7, r2"                    "\n\t"
+        //"mul r8, r0, r11"                    "\n\t"
+        //"add r7, r7, r8"                    "\n\t"
+        //"mul r7, r10, r7"                    "\n\t"
+        //"add r7, r7, r3"                    "\n\t"
 
         // &matrixB[k][j] -> r8
-        "mov r8, r1"                    "\n\t"
-        "mul r9, r2, r11"                    "\n\t"
-        "add r8, r8, r9"                    "\n\t"
-        "mul r8, r10, r8"                    "\n\t"
-        "add r8, r8, r4"                    "\n\t"
+        "mla r8, r2, r11, r1"		"\n\t"
+	"mla r8, r10, r8, r4"		"\n\t"
+	//"mov r8, r1"                    "\n\t"
+        //"mul r9, r2, r11"                    "\n\t"
+        //"add r8, r8, r9"                    "\n\t"
+        //"mul r8, r10, r8"                    "\n\t"
+        //"add r8, r8, r4"                    "\n\t"
 
         // //load matrixA 1-stride
         // "vld4.i32 {q0-q3}, [r7:32]!"            "\n\t"
@@ -149,31 +156,35 @@ int main()
 {
 	init_matrixes();/* Initializes matrix elements */
 
-    printf("%d\n", sizeof(matrixC)/1024/1024); // 4
+    //printf("%d\n", sizeof(matrixC)/1024/1024); // 4
 
-    int perf;
+    int perf, perf_cache_miss, perf_cache_access;
 
 	// init performance events count
 	//for description of events write "man perf_event_open" in console
-	perf = setup_perf(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES);
-	//perf = setup_perf_cache(PERF_COUNT_HW_CACHE_LL, PERF_COUNT_HW_CACHE_OP_READ, PERF_COUNT_HW_CACHE_RESULT_MISS);
+	//perf = setup_perf(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES);
+	perf_cache_miss = setup_perf_cache(PERF_COUNT_HW_CACHE_LL, PERF_COUNT_HW_CACHE_OP_READ, PERF_COUNT_HW_CACHE_RESULT_MISS);
+	perf_cache_access = setup_perf_cache(PERF_COUNT_HW_CACHE_LL, PERF_COUNT_HW_CACHE_OP_READ, PERF_COUNT_HW_CACHE_RESULT_ACCESS);
 
 	clock_t begin_time = clock();
 
-	start_perf(perf);		// start performance events count
+	start_perf(perf_cache_miss);		// start performance events count
+	start_perf(perf_cache_access);		// start performance events count
 
-	matrix_multiply_basic();
-    //matrix_multiply_asm();
+	//matrix_multiply_basic();
+    	matrix_multiply_asm();
 
-    print_matrix(matrixC, 10);
+    	//print_matrix(matrixC, 10);
 
-	end_perf(perf);			// stop performance events count
+	end_perf(perf_cache_miss);			// stop performance events count
+	end_perf(perf_cache_access);			// stop performance events count
 
 	clock_t end_time = clock();
 
 	printf("Execution took %f seconds.\n", (end_time-begin_time)/1000000.0);
 
-	print_perf(perf);		// print performance events count
+	print_perf(perf_cache_miss);		// print performance events count
+	print_perf(perf_cache_access);		// print performance events count
 
 	return 0;
 

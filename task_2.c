@@ -9,9 +9,9 @@
 #include <linux/perf_event.h>
 #include "perf.c"
 #define N 1024
-static int matrixA[N][N] __attribute__ ((aligned(32)));
-static int matrixB[N][N] __attribute__ ((aligned(32)));
-static int matrixC[N][N] __attribute__ ((aligned(32)));
+static int matrixA[N][N] __attribute__ ((aligned(64)));
+static int matrixB[N][N] __attribute__ ((aligned(64)));
+static int matrixC[N][N] __attribute__ ((aligned(64)));
 //initialise vectors with random values
 void init_matrixes(){
 	int i, j;
@@ -65,8 +65,8 @@ void matrix_multiply_asm()
         "mov r2, #0"                    "\n\t"
 
         // move #0 to the 8 temp vectors => 4x4ints once
-        "vmov.i32 d0, #0"                       "\n\t"
-        "vmov.i32 d1, #0"                       "\n\t" //
+        //"vmov.i32 d0, #0"                       "\n\t"
+        //"vmov.i32 d1, #0"                       "\n\t" //
 
         // init results
         "vmov.i32 d2, #0"                       "\n\t"
@@ -75,31 +75,15 @@ void matrix_multiply_asm()
 	"mla r6, r11, r1, r0"		"\n\t"
 	"mla r6, r10, r6, r5"		"\n\t"
 
-        //"mov r6, r1"                    "\n\t"
-        //"mul r7, r0, r11"                    "\n\t"
-        //"add r6, r6, r7"                    "\n\t"
-        //"mul r6, r10, r6"                    "\n\t"
-        //"add r6, r6, r5"                    "\n\t"
-
     "K_loop:"                    "\n\t"
 
         // &matrixA[i][k] -> r7
         "mla r7, r0, r11, r2"		"\n\t"
 	"mla r7, r10, r7, r3"		"\n\t"
-    	//"mov r7, r2"                    "\n\t"
-        //"mul r8, r0, r11"                    "\n\t"
-        //"add r7, r7, r8"                    "\n\t"
-        //"mul r7, r10, r7"                    "\n\t"
-        //"add r7, r7, r3"                    "\n\t"
 
         // &matrixB[k][j] -> r8
         "mla r8, r2, r11, r1"		"\n\t"
 	"mla r8, r10, r8, r4"		"\n\t"
-	//"mov r8, r1"                    "\n\t"
-        //"mul r9, r2, r11"                    "\n\t"
-        //"add r8, r8, r9"                    "\n\t"
-        //"mul r8, r10, r8"                    "\n\t"
-        //"add r8, r8, r4"                    "\n\t"
 
         // //load matrixA 1-stride
         // "vld4.i32 {q0-q3}, [r7:32]!"            "\n\t"
@@ -111,7 +95,8 @@ void matrix_multiply_asm()
 
         // multiply
         "vmla.i32 d2, d0, d1"            "\n\t"
-
+	//"vmul.i32 d0, d0, d1"		"\n\t"
+	//"vadd.i32 d2, d2, d0"		"\n\t"
 
         // judge if jump out K_loop or not
         // process 16 numbers at one time
@@ -128,7 +113,7 @@ void matrix_multiply_asm()
         // "vadd.i32 d16, d16, d17"                    "\n\t"
         // "vpadd.i32 d16, d16"                    "\n\t"
 
-        //"vpadd.i32 d2, d2"                    "\n\t"
+        "vpadd.i32 d2, d2"                    "\n\t"
         // write back to C
         "vst1.32 d2[0], [r6:32]!"                    "\n\t"
 

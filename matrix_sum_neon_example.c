@@ -95,7 +95,7 @@ int main()
 {
 	init_matrixes();/* Initializes matrix elements */
 	int perf;
-
+	//printf("%d\n%d\n", &matrixA[0][0], &matrixA[0][1]);
 	// init performance events count
 	//for description of event write "man perf_event_open" in console
 	perf = setup_perf(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); 

@@ -34,27 +34,25 @@ void print_matrix(int matrix[N][N], int n){
     }
 }
 
-void transpose(int m[N][N])
-{
-	for (int i=0;i<N;i++){
-		for (int j=i;j<N;j++){
-			int temp = m[i][j];
-			m[i][j] = m[j][i];
-			m[j][i] = temp;
-		}
-	}
-}
-
 void matrix_multiply_basic()
 {
-	
-	transpose(matrixB);
-	
 	int i,j,k;
 	for (i = 0 ; i < N ; i+=1)
 		for(j = 0 ; j < N ; j +=1)
 			for(k = 0 ; k < N ; k +=1)
-				matrixC[i][j] += matrixA[i][k] * matrixB[j][k];
+				matrixC[i][j] += matrixA[i][k] * matrixB[k][j];
+}
+
+void transpose(int m[N][N])
+{	
+	int temp;
+	for (int i=0;i<N;i++){
+		for (int j=i;j<N;j++){
+			temp = m[i][j];
+			m[i][j] = m[j][i];
+			m[j][i] = temp;
+		}
+	}
 }
 
 void matrix_multiply_asm()
@@ -81,12 +79,20 @@ void matrix_multiply_asm()
         // k -> r2
         "mov r2, #0"                    "\n\t"
 
-        // init results
-        "vmov.i32 d31, #0"                       "\n\t"
 
         // &matrixC[i][j] -> r6
 	"mla r6, r0, r11, r1"		"\n\t"
 	"mla r6, r10, r6, r5"		"\n\t"
+	
+		
+	"vmov.i32 q8, #0"		"\n\t"	
+	"vmov.i32 q9, #0"		"\n\t"	
+	"vmov.i32 q10, #0"		"\n\t"	
+	"vmov.i32 q11, #0"		"\n\t"	
+	"vmov.i32 q12, #0"		"\n\t"	
+	"vmov.i32 q13, #0"		"\n\t"	
+	"vmov.i32 q14, #0"		"\n\t"	
+	"vmov.i32 q15, #0"		"\n\t"	
 
     "K_loop:"                    "\n\t"
 
@@ -98,35 +104,80 @@ void matrix_multiply_asm()
         "mla r8, r1, r11, r2"		"\n\t"
 	"mla r8, r10, r8, r4"		"\n\t"
 	
-        "vld1.64 {d0-d3}, [r7:64]!"            "\n\t"
-        "vld1.64 {d4-d7}, [r8:64]!"            "\n\t"
+	// data prefetching
+	"pld [r7, #384]"			"\n\t"	
+	"pld [r8, #384]"			"\n\t"	
+        
+	"add r9, r7, #1024"			"\n\t"
+	"add r12, r8, #1024"			"\n\t"
 
-        // multiply
-        "vmla.i32 q4, q0, q2"            "\n\t"
-	"vmla.i32 q5, q1, q3"		"\n\t"
+	// first lines a/b
+	"vld1.64 {d0-d3}, [r7:64]!"            "\n\t"
+        "vld1.64 {d4-d7}, [r8:64]!"            "\n\t"
+	
+	// second lines a/b
+	"vld1.64 {d8-d11}, [r9:64]!"            "\n\t"
+        "vld1.64 {d12-d15}, [r12:64]!"            "\n\t"
 	
 
-	// 4 elements a time
+        // multiply 00
+        "vmla.i32 q8, q0, q2"            "\n\t"
+	"vmla.i32 q9, q1, q3"		"\n\t"
+	
+	// multiply 01
+        "vmla.i32 q10, q0, q6"            "\n\t"
+	"vmla.i32 q11, q1, q7"		"\n\t"
+
+	// multiplY 10
+        "vmla.i32 q12, q4, q2"            "\n\t"
+	"vmla.i32 q13, q5, q3"		"\n\t"
+
+	// multiply 11
+        "vmla.i32 q14, q4, q6"            "\n\t"
+	"vmla.i32 q15, q5, q7"		"\n\t"
+
+	// 8 elements a time
         "add r2, r2, #8"               "\n\t"
         "cmp r2, r11"                    "\n\t"
         "bne K_loop"                    "\n\t"
 
-        // // reduce value register-wide
-        "vadd.i32 q4, q4, q5"                    "\n\t"
-        "vadd.i32 d8, d8, d9"                    "\n\t"
-        "vpadd.i32 d8, d8"                    "\n\t"
-        
+        // reduce value register-wide
+	
+
+	"vadd.i32 q8, q8, q9"			"\n\t"
+	"vadd.i32 d16, d16, d17"			"\n\t"
+	"vpadd.i32 d16, d16"                    "\n\t"
+	
+	"vadd.i32 q10, q10, q11"			"\n\t"
+	"vadd.i32 d20, d20, d21"			"\n\t"
+	"vpadd.i32 d20, d20"                    "\n\t"
+
+	"vadd.i32 q12, q12, q13"			"\n\t"
+	"vadd.i32 d24, d24, d25"			"\n\t"
+	"vpadd.i32 d24, d24"                    "\n\t"
+	
+	"vadd.i32 q14, q14, q15"			"\n\t"
+	"vadd.i32 d28, d28, d29"			"\n\t"
+	"vpadd.i32 d28, d28"                    "\n\t"
+	        
 	// write back to C
-        "vst1.32 d8[0], [r6:32]!"                    "\n\t"
-
-
-        // judge if jump out K_loop or not
-        "add r1, r1, #1"                    "\n\t"
+        "vst1.32 d16[0], [r6:32]"                    "\n\t"
+        "add r6, r6, #4"			"\n\t"
+        "vst1.32 d20[0], [r6:32]"                    "\n\t"
+        "add r6, r6, #1020"			"\n\t"
+	"vst1.32 d24[0], [r6:32]"                    "\n\t"
+        "add r6, r6, #4"			"\n\t"
+        "vst1.32 d28[0], [r6:32]"                    "\n\t"
+	"sub r6, r6, #1024"			"\n\t"
+	"sub r6, r6, #4"			"\n\t"
+        
+	// judge if jump out K_loop or not
+        "add r1, r1, #2"                    "\n\t"
         "cmp r1, r11"                    "\n\t"
 	"bne J_loop"                    "\n\t"
 
         // judge if jump out K_loop or not
-        "add r0, r0, #1"                    "\n\t"
+        "add r0, r0, #2"                    "\n\t"
         "cmp r0, r11"                    "\n\t"
 	"bne I_loop"                    "\n\t"
 
